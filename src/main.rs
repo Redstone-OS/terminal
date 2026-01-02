@@ -1,10 +1,22 @@
 //! # Terminal - Emulador de Terminal para RedstoneOS
 //!
 //! Aplicativo de terminal gráfico com:
+//! - Shell interativo com comandos reais
 //! - Decorações de janela (barra de título, botões)
 //! - Renderização de texto com fonte bitmap
 //! - Cursor piscante
 //! - Buffer de scroll
+//!
+//! ## Comandos Suportados
+//!
+//! | Comando                   | Status         |
+//! |---------------------------|----------------|
+//! | ls, cd, pwd, cat, tree    | 🟢 Funcional   |
+//! | mkdir, rmdir, rm, cp, mv  | ⚪ Stub        |
+//! | help, clear, exit, ver    | 🟢 Funcional   |
+//! | uptime                    | 🟢 Funcional   |
+//! | ps, kill, top, jobs       | ⚪ Stub        |
+//! | sysinfo, meminfo          | ⚪ Stub        |
 
 #![no_std]
 #![no_main]
@@ -12,6 +24,7 @@
 extern crate alloc;
 
 mod render;
+mod shell;
 mod state;
 mod ui;
 
@@ -24,33 +37,28 @@ use ui::window::TerminalWindow;
 static ALLOCATOR: redpowder::mem::heap::SyscallAllocator = redpowder::mem::heap::SyscallAllocator;
 
 /// Dimensões padrão da janela
-const WINDOW_WIDTH: u32 = 640;
+const WINDOW_WIDTH: u32 = 720;
 const WINDOW_HEIGHT: u32 = 480;
-
-/// Intervalo entre frames (ms)
-const FRAME_INTERVAL: u64 = 16;
 
 /// Ponto de entrada
 #[no_mangle]
 #[link_section = ".text._start"]
 pub extern "C" fn _start() -> ! {
-    println!("[Terminal] Iniciando...");
+    println!("[Terminal] Iniciando v0.2.0...");
 
     match run() {
         Ok(()) => println!("[Terminal] Encerrado normalmente"),
         Err(e) => println!("[Terminal] Erro fatal: {:?}", e),
     }
 
-    // Loop infinito de fallback
-    loop {
-        let _ = redpowder::time::sleep(1000);
-    }
+    // Exit limpo
+    redpowder::process::exit(0);
 }
 
 /// Função principal
 fn run() -> Result<(), redpowder::syscall::SysError> {
     // Criar janela no compositor
-    let mut window = Window::create(100, 50, WINDOW_WIDTH, WINDOW_HEIGHT, "Terminal")?;
+    let mut window = Window::create(80, 50, WINDOW_WIDTH, WINDOW_HEIGHT, "Terminal")?;
     println!("[Terminal] Janela criada: ID {}", window.id);
 
     // Criar terminal
@@ -62,13 +70,7 @@ fn run() -> Result<(), redpowder::syscall::SysError> {
     );
 
     // Mensagem de boas-vindas
-    terminal.writeln("RedstoneOS Terminal v0.1.0");
-    terminal.writeln("---------------------------");
-    terminal.writeln("");
-    terminal.writeln("Bem-vindo ao terminal do RedstoneOS!");
-    terminal.writeln("Este e um emulador de terminal grafico.");
-    terminal.writeln("");
-    terminal.write("redstone@localhost:~$ ");
+    terminal.show_welcome();
 
     // Primeira renderização
     terminal.draw(&mut window);
@@ -88,7 +90,7 @@ fn run() -> Result<(), redpowder::syscall::SysError> {
             break;
         }
 
-        // Atualizar animações (cursor piscante sempre marca como dirty para piscar)
+        // Atualizar animações (cursor piscante)
         let old_cursor_visible = terminal.state.cursor_visible;
         terminal.tick();
         if old_cursor_visible != terminal.state.cursor_visible {
@@ -118,5 +120,5 @@ fn run() -> Result<(), redpowder::syscall::SysError> {
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     println!("[Terminal] PANIC: {:?}", info);
-    loop {}
+    redpowder::process::exit(1);
 }

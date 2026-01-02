@@ -5,8 +5,11 @@
 use crate::render::colors;
 use crate::render::font::{CHAR_HEIGHT, CHAR_WIDTH};
 use crate::render::text::TextRenderer;
+use crate::shell::commands::CommandResult;
+use crate::shell::{execute_command, ShellContext};
 use crate::state::terminal::TerminalState;
 use crate::ui::decorations::{WindowDecorations, BUTTON_WIDTH, CONTENT_PADDING, TITLE_BAR_HEIGHT};
+use alloc::string::String;
 use redpowder::window::Window;
 
 use redpowder::event::{event_type, Event};
@@ -16,6 +19,8 @@ use redpowder::input::KeyCode;
 pub struct TerminalWindow {
     /// Estado do terminal (buffer, cursor, etc)
     pub state: TerminalState,
+    /// Contexto do shell (CWD, usuário, etc)
+    pub shell_ctx: ShellContext,
     /// Decorações da janela
     pub decorations: WindowDecorations,
     /// Renderizador de texto
@@ -30,6 +35,10 @@ pub struct TerminalWindow {
     pub should_close: bool,
     /// Flag para evitar redesenho desnecessário (flicker)
     pub dirty: bool,
+    /// Buffer do comando atual (linha de input)
+    input_buffer: String,
+    /// Posição do prompt na linha atual
+    prompt_pos: usize,
 }
 
 impl TerminalWindow {
@@ -43,8 +52,11 @@ impl TerminalWindow {
         let cols = content_width / CHAR_WIDTH;
         let rows = content_height / CHAR_HEIGHT;
 
+        let shell_ctx = ShellContext::new();
+
         Self {
             state: TerminalState::new(cols, rows),
+            shell_ctx,
             decorations: WindowDecorations::new("Terminal", width, height),
             renderer: TextRenderer::new(),
             width,
@@ -52,7 +64,30 @@ impl TerminalWindow {
             shift: false,
             should_close: false,
             dirty: true,
+            input_buffer: String::new(),
+            prompt_pos: 0,
         }
+    }
+
+    /// Mostra mensagem de boas-vindas
+    pub fn show_welcome(&mut self) {
+        self.state.write_line("RedstoneOS Terminal v0.2.0");
+        self.state.write_line("==========================");
+        self.state.write_line("");
+        self.state
+            .write_line("Bem-vindo ao terminal do RedstoneOS!");
+        self.state
+            .write_line("Digite 'help' para ver os comandos disponiveis.");
+        self.state.write_line("");
+        self.show_prompt();
+    }
+
+    /// Mostra o prompt
+    fn show_prompt(&mut self) {
+        let prompt = self.shell_ctx.prompt();
+        self.state.write_str(&prompt);
+        self.prompt_pos = prompt.len();
+        self.input_buffer.clear();
     }
 
     /// Processa eventos
@@ -68,19 +103,19 @@ impl TerminalWindow {
                     }
 
                     if code == KeyCode::Backspace {
-                        self.state.backspace();
+                        self.handle_backspace();
                         self.dirty = true;
                         return;
                     }
 
                     if code == KeyCode::Enter {
-                        self.process_command();
+                        self.handle_enter();
                         self.dirty = true;
                         return;
                     }
 
                     if let Some(c) = code.to_char(self.shift) {
-                        self.state.write_char(c);
+                        self.handle_char(c);
                         self.dirty = true;
                     }
                 } else if input.event_type == event_type::KEY_UP {
@@ -93,21 +128,11 @@ impl TerminalWindow {
                     let x = (input.param1 as u16 as i16) as i32;
                     let y = ((input.param2 >> 16) as u16 as i16) as i32;
 
-                    redpowder::println!("[Terminal] Mouse click at ({}, {})", x, y);
-
                     // Botão fechar (no canto direito da title bar)
                     if y >= 0 && y < TITLE_BAR_HEIGHT as i32 {
                         // Fechar (X)
                         if x >= (self.width as i32 - BUTTON_WIDTH as i32) && x < self.width as i32 {
-                            redpowder::println!("[Terminal] Botao fechar clicado!");
                             self.should_close = true;
-                        }
-                        // Minimizar (_)
-                        else if x >= (self.width as i32 - (BUTTON_WIDTH as i32 * 2))
-                            && x < (self.width as i32 - BUTTON_WIDTH as i32)
-                        {
-                            redpowder::println!("[Terminal] Botao minimizar clicado!");
-                            // Por enquanto vamos apenas printar, pois precisamos de suporte no Compositor/Shell
                         }
                     }
                 }
@@ -116,45 +141,43 @@ impl TerminalWindow {
         }
     }
 
-    /// Processa o comando digitado na linha atual
-    fn process_command(&mut self) {
-        // Obter comando da linha atual
-        let line_idx = self.state.scroll_offset + self.state.cursor_y as usize;
-        let line_content = self.state.lines[line_idx].clone();
+    /// Trata caractere digitado
+    fn handle_char(&mut self, c: char) {
+        self.input_buffer.push(c);
+        self.state.write_char(c);
+    }
 
-        // Extrair apenas o que vem depois do prompt "redstone@localhost:~$ "
-        let prompt = "redstone@localhost:~$ ";
-        let cmd = if line_content.starts_with(prompt) {
-            &line_content[prompt.len()..]
-        } else {
-            &line_content
+    /// Trata backspace
+    fn handle_backspace(&mut self) {
+        if !self.input_buffer.is_empty() {
+            self.input_buffer.pop();
+            self.state.backspace();
         }
-        .trim();
+    }
 
+    /// Trata Enter - executa comando
+    fn handle_enter(&mut self) {
         self.state.write_char('\n');
 
-        if cmd.is_empty() {
-            // Nada
-        } else if cmd == "help" {
-            self.state.write_line("Comandos disponiveis:");
-            self.state.write_line("  help  - Mostra esta lista");
-            self.state.write_line("  clear - Limpa a tela");
-            self.state.write_line("  exit  - Fecha o terminal");
-            self.state.write_line("  ver   - Mostra versao do SO");
-            self.state.write_line("");
-        } else if cmd == "clear" {
-            self.state.clear();
-        } else if cmd == "exit" {
-            self.should_close = true;
-            return;
-        } else if cmd == "ver" {
-            self.state.write_line("RedstoneOS v0.1.0 (Firefly)");
-        } else {
-            self.state.write_str("Comando nao encontrado: ");
-            self.state.write_line(cmd);
+        // Executar comando
+        let cmd = self.input_buffer.clone();
+        match execute_command(&cmd, &mut self.shell_ctx, &mut self.state) {
+            CommandResult::Ok => {
+                self.show_prompt();
+            }
+            CommandResult::Exit => {
+                self.should_close = true;
+            }
+            CommandResult::Clear => {
+                self.state.clear();
+                self.show_prompt();
+            }
+            CommandResult::Error(msg) => {
+                self.state.write_str("Erro: ");
+                self.state.write_line(&msg);
+                self.show_prompt();
+            }
         }
-
-        self.state.write_str("redstone@localhost:~$ ");
     }
 
     /// Escreve texto no terminal
