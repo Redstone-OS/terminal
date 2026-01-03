@@ -4,6 +4,7 @@
 
 use super::colors;
 use super::font::{BitFont, CHAR_HEIGHT, CHAR_WIDTH};
+use gfx_types::color::Color;
 use redpowder::window::Window;
 
 /// Renderizador de texto
@@ -49,7 +50,7 @@ impl TextRenderer {
                     self.bg_color
                 };
 
-                window.put_pixel(pixel_x, pixel_y, color);
+                window.put_pixel(pixel_x, pixel_y, Color(color));
             }
         }
     }
@@ -102,7 +103,7 @@ impl TextRenderer {
                 let bit = (byte >> (7 - col)) & 1;
                 let color = if bit == 1 { fg } else { bg };
 
-                window.put_pixel(pixel_x, pixel_y, color);
+                window.put_pixel(pixel_x, pixel_y, Color(color));
             }
         }
     }

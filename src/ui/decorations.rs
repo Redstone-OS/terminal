@@ -5,6 +5,8 @@
 use crate::render::colors;
 use crate::render::font::{CHAR_HEIGHT, CHAR_WIDTH};
 use crate::render::text::TextRenderer;
+use gfx_types::color::Color;
+use gfx_types::geometry::Rect;
 use redpowder::window::Window;
 
 /// Altura da barra de título
@@ -60,7 +62,8 @@ impl WindowDecorations {
         };
 
         // Fundo da barra de título
-        window.fill_rect(0, 0, self.width, TITLE_BAR_HEIGHT, bg_color);
+        let title_rect = Rect::new(0, 0, self.width, TITLE_BAR_HEIGHT);
+        window.fill_rect(title_rect, Color(bg_color));
 
         // Título centralizado
         let renderer = TextRenderer::new();
@@ -90,13 +93,8 @@ impl WindowDecorations {
         let btn_y = 0;
 
         // Fundo do botão (cor de hover simulada para visibilidade)
-        window.fill_rect(
-            btn_x,
-            btn_y,
-            BUTTON_WIDTH,
-            TITLE_BAR_HEIGHT,
-            colors::CLOSE_BUTTON_HOVER,
-        );
+        let btn_rect = Rect::new(btn_x as i32, btn_y, BUTTON_WIDTH, TITLE_BAR_HEIGHT);
+        window.fill_rect(btn_rect, Color(colors::CLOSE_BUTTON_HOVER));
 
         // X no centro
         let x_char_x = btn_x + (BUTTON_WIDTH - CHAR_WIDTH) / 2;
@@ -119,13 +117,8 @@ impl WindowDecorations {
         let btn_y = 0;
 
         // Fundo do botão
-        window.fill_rect(
-            btn_x,
-            btn_y,
-            BUTTON_WIDTH,
-            TITLE_BAR_HEIGHT,
-            colors::MINIMIZE_BUTTON_HOVER,
-        );
+        let btn_rect = Rect::new(btn_x as i32, btn_y as i32, BUTTON_WIDTH, TITLE_BAR_HEIGHT);
+        window.fill_rect(btn_rect, Color(colors::MINIMIZE_BUTTON_HOVER));
 
         // - no centro
         let char_x = btn_x + (BUTTON_WIDTH - CHAR_WIDTH) / 2;
@@ -144,37 +137,34 @@ impl WindowDecorations {
 
     /// Desenha borda da janela
     fn draw_border(&self, window: &mut Window) {
-        let color = colors::WINDOW_BORDER;
-
-        // Topo (abaixo da title bar)
-        // window.fill_rect(0, TITLE_BAR_HEIGHT, self.width, BORDER_WIDTH, color);
+        let color = Color(colors::WINDOW_BORDER);
 
         // Esquerda
-        window.fill_rect(
+        let left_rect = Rect::new(
             0,
-            TITLE_BAR_HEIGHT,
+            TITLE_BAR_HEIGHT as i32,
             BORDER_WIDTH,
             self.height - TITLE_BAR_HEIGHT,
-            color,
         );
+        window.fill_rect(left_rect, color);
 
         // Direita
-        window.fill_rect(
-            self.width - BORDER_WIDTH,
-            TITLE_BAR_HEIGHT,
+        let right_rect = Rect::new(
+            (self.width - BORDER_WIDTH) as i32,
+            TITLE_BAR_HEIGHT as i32,
             BORDER_WIDTH,
             self.height - TITLE_BAR_HEIGHT,
-            color,
         );
+        window.fill_rect(right_rect, color);
 
         // Inferior
-        window.fill_rect(
+        let bottom_rect = Rect::new(
             0,
-            self.height - BORDER_WIDTH,
+            (self.height - BORDER_WIDTH) as i32,
             self.width,
             BORDER_WIDTH,
-            color,
         );
+        window.fill_rect(bottom_rect, color);
     }
 
     /// Retorna a área de conteúdo disponível (x, y, width, height)

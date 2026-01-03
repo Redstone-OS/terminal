@@ -10,6 +10,8 @@ use crate::shell::{execute_command, ShellContext};
 use crate::state::terminal::TerminalState;
 use crate::ui::decorations::{WindowDecorations, BUTTON_WIDTH, CONTENT_PADDING, TITLE_BAR_HEIGHT};
 use alloc::string::String;
+use gfx_types::color::Color;
+use gfx_types::geometry::Rect;
 use redpowder::window::Window;
 
 use redpowder::event::{event_type, Event};
@@ -207,13 +209,8 @@ impl TerminalWindow {
 
         // 2. Preencher área de conteúdo com fundo
         let (content_x, content_y, content_w, content_h) = self.decorations.content_area();
-        window.fill_rect(
-            content_x,
-            content_y,
-            content_w,
-            content_h,
-            colors::BACKGROUND,
-        );
+        let content_rect = Rect::new(content_x as i32, content_y as i32, content_w, content_h);
+        window.fill_rect(content_rect, Color(colors::BACKGROUND));
 
         // 3. Desenhar linhas de texto
         self.draw_content(window, content_x, content_y, content_w, content_h);
@@ -246,7 +243,8 @@ impl TerminalWindow {
         let cursor_y = content_y + (self.state.cursor_y * CHAR_HEIGHT);
 
         // Cursor estilo bloco
-        window.fill_rect(cursor_x, cursor_y, CHAR_WIDTH, CHAR_HEIGHT, colors::CURSOR);
+        let cursor_rect = Rect::new(cursor_x as i32, cursor_y as i32, CHAR_WIDTH, CHAR_HEIGHT);
+        window.fill_rect(cursor_rect, Color(colors::CURSOR));
     }
 
     /// Retorna número de colunas
