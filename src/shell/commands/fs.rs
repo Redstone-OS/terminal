@@ -46,6 +46,8 @@ pub fn cmd_ls(output: &mut TerminalState, ctx: &mut ShellContext, args: &[&str])
     // Resolver path
     let full_path = resolve_path(&ctx.cwd, path);
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     // Abrir diretório
     match Dir::open(&full_path) {
         Ok(dir) => {

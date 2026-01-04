@@ -167,6 +167,8 @@ impl TerminalState {
         self.lines.get(idx).map(|s| s.as_str())
     }
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     /// Scroll para cima
     pub fn scroll_up(&mut self, lines: usize) {
         if self.scroll_offset >= lines {
@@ -176,6 +178,8 @@ impl TerminalState {
         }
     }
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     /// Scroll para baixo
     pub fn scroll_down(&mut self, lines: usize) {
         let max_scroll = self.lines.len().saturating_sub(self.rows as usize);

@@ -108,11 +108,15 @@ impl TextRenderer {
         }
     }
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     /// Retorna largura do caractere
     pub const fn char_width(&self) -> u32 {
         CHAR_WIDTH
     }
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     /// Retorna altura do caractere
     pub const fn char_height(&self) -> u32 {
         CHAR_HEIGHT

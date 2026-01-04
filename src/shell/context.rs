@@ -4,6 +4,8 @@
 
 use alloc::string::String;
 
+// TODO: Revisar no futuro
+#[allow(unused)]
 /// Contexto do shell
 pub struct ShellContext {
     /// Diretório de trabalho atual

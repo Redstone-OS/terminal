@@ -17,6 +17,8 @@ use redpowder::window::Window;
 use redpowder::event::{event_type, Event};
 use redpowder::input::KeyCode;
 
+// TODO: Revisar no futuro
+#[allow(unused)]
 /// Janela do terminal
 pub struct TerminalWindow {
     /// Estado do terminal (buffer, cursor, etc)
@@ -182,16 +184,22 @@ impl TerminalWindow {
         }
     }
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     /// Escreve texto no terminal
     pub fn write(&mut self, text: &str) {
         self.state.write_str(text);
     }
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     /// Escreve linha no terminal
     pub fn writeln(&mut self, text: &str) {
         self.state.write_line(text);
     }
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     /// Limpa o terminal
     pub fn clear(&mut self) {
         self.state.clear();
@@ -221,6 +229,8 @@ impl TerminalWindow {
         }
     }
 
+    // TODO: Revisar no futuro
+    #[allow(unused)]
     /// Desenha o conteúdo do terminal (linhas de texto)
     fn draw_content(&self, window: &mut Window, x: u32, y: u32, w: u32, h: u32) {
         for row in 0..self.state.rows {

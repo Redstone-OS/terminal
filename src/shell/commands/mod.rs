@@ -11,6 +11,8 @@ use crate::state::terminal::TerminalState;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+// TODO: Revisar no futuro
+#[allow(unused)]
 /// Resultado de execução de comando
 pub enum CommandResult {
     /// Comando executado com sucesso

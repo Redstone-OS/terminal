@@ -12,6 +12,8 @@ pub const CHAR_WIDTH: u32 = 8;
 /// Altura de cada caractere em pixels
 pub const CHAR_HEIGHT: u32 = 16;
 
+// TODO: Revisar no futuro
+#[allow(unused)]
 /// Fonte Bitmap 8x16.
 #[derive(Debug, Clone, Copy)]
 pub struct BitFont {
